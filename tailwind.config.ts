@@ -5,6 +5,12 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  safelist: [
+    'lg:ml-[240px]',
+    'lg:translate-x-0',
+    '-translate-x-full',
+    'translate-x-0',
+  ],
   theme: {
     extend: {
       colors: {

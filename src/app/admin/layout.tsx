@@ -6,7 +6,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/contexts/ThemeContext';
-import { LayoutDashboard, Package, ShoppingCart, Settings, LogOut, Menu, X, Sun, Moon, ExternalLink } from 'lucide-react';
+import {
+  LayoutDashboard, Package, ShoppingCart,
+  Settings, LogOut, Menu, X, Sun, Moon, ExternalLink,
+} from 'lucide-react';
 
 const navItems = [
   { href: '/admin',          label: 'Dashboard',  icon: LayoutDashboard, badge: null },
@@ -15,82 +18,143 @@ const navItems = [
   { href: '/admin/settings', label: 'Paramètres', icon: Settings,        badge: null },
 ];
 
+/*
+  SIDEBAR PALETTE — always uses the store's signature dark navy + gold.
+  This stays dark regardless of the light/dark theme toggle so it matches
+  the brand identity and text is always readable.
+*/
+const SB = {
+  bg:          'linear-gradient(165deg, #0a0e1a 0%, #0f1628 40%, #0d1530 70%, #080c18 100%)',
+  border:      'rgba(201,162,39,0.18)',
+  glow1:       'rgba(201,162,39,0.07)',   // gold glow top-right
+  glow2:       'rgba(100,60,180,0.06)',   // purple glow bottom-left
+  logoName:    '#e6c97a',                 // gold-light
+  logoSub:     'rgba(201,162,39,0.45)',
+  sectionLabel:'rgba(201,162,39,0.35)',
+  itemDefault: 'rgba(253,248,238,0.5)',   // always light text
+  itemHover:   'rgba(253,248,238,0.88)',
+  itemActive:  '#e6c97a',
+  itemActiveBg:'rgba(201,162,39,0.13)',
+  itemBorder:  '#c9a227',
+  footerText:  'rgba(253,248,238,0.38)',  // footer links — always visible
+  footerHover: 'rgba(253,248,238,0.75)',
+  logoutHover: '#f87171',
+  divider:     'rgba(201,162,39,0.1)',
+  badge:       { bg: 'rgba(201,162,39,0.18)', color: '#c9a227', border: 'rgba(201,162,39,0.35)' },
+};
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router   = useRouter();
   const pathname = usePathname();
   const { toggle, isLight } = useTheme();
   const [open, setOpen]       = useState(false);
   const [checking, setChecking] = useState(true);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [pending, setPending]   = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session && pathname !== '/admin/login') router.push('/admin/login');
       setChecking(false);
     });
-    supabase.from('orders').select('*', { count: 'exact', head: true })
-      .eq('status', 'pending').then(({ count }) => setPendingCount(count || 0));
-  }, [pathname, router]);
+    supabase.from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending')
+      .then(({ count }) => setPending(count || 0));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const logout = async () => { await supabase.auth.signOut(); router.push('/admin/login'); };
 
   if (pathname === '/admin/login') return <>{children}</>;
   if (checking) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>
-      <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid var(--gold-mid)', borderTopColor: 'transparent', animation: 'spinSlow 0.7s linear infinite' }} />
+      <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid #c9a227', borderTopColor: 'transparent', animation: 'spin 0.7s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
+
+  const currentPage = navItems.find(n => pathname === n.href || (n.href !== '/admin' && pathname.startsWith(n.href)));
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)' }}>
 
-      {/* ══ SIDEBAR ══ */}
-      <aside className={`admin-sidebar fixed lg:static inset-y-0 left-0 z-50 flex flex-col transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
-        style={{ width: 240, minWidth: 240 }}>
+      {/* ══════════════════════════════
+          SIDEBAR — store brand colors
+          ══════════════════════════════ */}
+      <aside
+        style={{
+          width: 240, minWidth: 240, flexShrink: 0,
+          background: SB.bg,
+          borderRight: `1px solid ${SB.border}`,
+          display: 'flex', flexDirection: 'column',
+          position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 50,
+          transform: open ? 'translateX(0)' : undefined,
+          overflow: 'hidden',
+        }}
+        className={`${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300`}
+      >
+        {/* Decorative glow orbs */}
+        <div style={{ position: 'absolute', top: -80, right: -80, width: 260, height: 260, borderRadius: '50%', background: `radial-gradient(circle, ${SB.glow1}, transparent)`, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: 40, left: -60, width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle, ${SB.glow2}, transparent)`, pointerEvents: 'none' }} />
 
-        {/* Logo area */}
-        <div style={{ padding: '1.5rem 1.25rem 1rem', borderBottom: '1px solid rgba(201,162,39,0.1)' }}>
+        {/* ── Logo ── */}
+        <div style={{ padding: '1.4rem 1.25rem 1rem', borderBottom: `1px solid ${SB.divider}`, position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <div style={{ width: 32, height: 32, position: 'relative' }}>
-                <Image src="/images/logo.png" alt="Logo" fill className="object-contain"
+              {/* Logo image */}
+              <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', border: '1px solid rgba(201,162,39,0.3)', position: 'relative', flexShrink: 0 }}>
+                <Image src="/images/logo.png" alt="Amine Parfumes" fill className="object-cover"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
               <div>
-                <p style={{ fontFamily: 'var(--font-display)', color: 'var(--gold-light)', fontSize: '1rem', lineHeight: 1 }}>
+                <p style={{ fontFamily: 'var(--font-display)', color: SB.logoName, fontSize: '1.05rem', lineHeight: 1, letterSpacing: '0.04em' }}>
                   Amine
                 </p>
-                <p style={{ fontFamily: 'var(--font-body)', color: 'rgba(201,162,39,0.5)', fontSize: '0.55rem', letterSpacing: '0.25em', textTransform: 'uppercase' }}>
-                  Admin
+                <p style={{ fontFamily: 'var(--font-body)', color: SB.logoSub, fontSize: '0.52rem', letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 1 }}>
+                  Administration
                 </p>
               </div>
             </div>
             <button onClick={() => setOpen(false)} className="lg:hidden"
-              style={{ color: 'rgba(253,248,238,0.4)', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
-              <X size={18} />
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: SB.itemDefault }}>
+              <X size={17} />
             </button>
           </div>
         </div>
 
-        {/* Nav section label */}
-        <div style={{ padding: '1.25rem 1.25rem 0.5rem' }}>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', letterSpacing: '0.2em', color: 'rgba(201,162,39,0.35)', textTransform: 'uppercase' }}>
-            Navigation
+        {/* ── Nav label ── */}
+        <div style={{ padding: '1.1rem 1.25rem 0.4rem' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.58rem', letterSpacing: '0.22em', color: SB.sectionLabel, textTransform: 'uppercase' }}>
+            Menu
           </p>
         </div>
 
-        {/* Nav items */}
-        <nav style={{ flex: 1, padding: '0 0.75rem' }}>
+        {/* ── Nav items ── */}
+        <nav style={{ flex: 1, padding: '0 0.6rem', overflowY: 'auto' }}>
           {navItems.map(({ href, label, icon: Icon, badge }) => {
             const active = pathname === href || (href !== '/admin' && pathname.startsWith(href));
             return (
               <Link key={href} href={href} onClick={() => setOpen(false)}
-                className={`sidebar-item ${active ? 'active' : ''}`}>
-                <Icon size={16} style={{ flexShrink: 0, opacity: active ? 1 : 0.7 }} />
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.7rem',
+                  padding: '0.62rem 0.9rem',
+                  borderRadius: 6, marginBottom: 2,
+                  textDecoration: 'none', fontSize: '0.82rem',
+                  fontFamily: 'var(--font-body)', letterSpacing: '0.02em',
+                  transition: 'all 0.2s ease',
+                  color: active ? SB.itemActive : SB.itemDefault,
+                  background: active ? SB.itemActiveBg : 'transparent',
+                  borderLeft: active ? `2px solid ${SB.itemBorder}` : '2px solid transparent',
+                }}>
+                <Icon size={15} style={{ flexShrink: 0, opacity: active ? 1 : 0.65 }} />
                 <span style={{ flex: 1 }}>{label}</span>
-                {badge === 'live' && pendingCount > 0 && (
-                  <span style={{ background: 'rgba(201,162,39,0.2)', color: 'var(--gold-mid)', fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: 100, border: '1px solid rgba(201,162,39,0.3)' }}>
-                    {pendingCount}
+                {badge === 'live' && pending > 0 && (
+                  <span style={{
+                    background: SB.badge.bg, color: SB.badge.color,
+                    border: `1px solid ${SB.badge.border}`,
+                    fontSize: '10px', fontWeight: 700, padding: '1px 7px', borderRadius: 100,
+                  }}>
+                    {pending}
                   </span>
                 )}
               </Link>
@@ -98,54 +162,97 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        {/* Sidebar footer */}
-        <div style={{ padding: '1rem 0.75rem', borderTop: '1px solid rgba(201,162,39,0.08)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {/* ── Footer links ── */}
+        <div style={{ padding: '0.75rem 0.6rem', borderTop: `1px solid ${SB.divider}`, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* Divider line */}
+          <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${SB.border}, transparent)`, marginBottom: 4 }} />
+
           {/* View site */}
           <Link href="/" target="_blank"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.55rem 1rem', color: 'rgba(253,248,238,0.3)', fontFamily: 'var(--font-body)', fontSize: '0.78rem', textDecoration: 'none', borderRadius: 'var(--radius-md)', transition: 'all var(--transition)' }}
-            className="hover:bg-white/5">
-            <ExternalLink size={14} />
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.6rem',
+              padding: '0.52rem 0.9rem', borderRadius: 6,
+              fontFamily: 'var(--font-body)', fontSize: '0.78rem',
+              textDecoration: 'none',
+              color: SB.footerText,           // ← always readable on dark sidebar
+              transition: 'color 0.2s ease',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = SB.footerHover)}
+            onMouseLeave={e => (e.currentTarget.style.color = SB.footerText)}
+          >
+            <ExternalLink size={13} />
             Voir le site
           </Link>
 
           {/* Logout */}
           <button onClick={logout}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.55rem 1rem', color: 'rgba(253,248,238,0.3)', fontFamily: 'var(--font-body)', fontSize: '0.78rem', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-md)', width: '100%', transition: 'all var(--transition)' }}
-            className="hover:text-red-400 hover:bg-white/5">
-            <LogOut size={14} />
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.6rem',
+              padding: '0.52rem 0.9rem', borderRadius: 6,
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--font-body)', fontSize: '0.78rem',
+              color: SB.footerText,           // ← always readable on dark sidebar
+              width: '100%', textAlign: 'left',
+              transition: 'color 0.2s ease',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = SB.logoutHover)}
+            onMouseLeave={e => (e.currentTarget.style.color = SB.footerText)}
+          >
+            <LogOut size={13} />
             Déconnexion
           </button>
         </div>
       </aside>
 
-      {/* Overlay */}
-      {open && <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setOpen(false)} />}
+      {/* Mobile overlay */}
+      {open && (
+        <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setOpen(false)} />
+      )}
 
-      {/* ══ MAIN CONTENT ══ */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      {/* ══════════════════════════════
+          MAIN CONTENT
+          ══════════════════════════════ */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, marginLeft: 0 }}
+        className="lg:ml-[240px]">
+
         {/* Top bar */}
-        <header style={{ position: 'sticky', top: 0, zIndex: 30, background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-gold)', padding: '0 1.5rem', height: 56, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <header style={{
+          position: 'sticky', top: 0, zIndex: 30,
+          background: 'var(--bg-surface)',
+          borderBottom: '1px solid var(--border-gold)',
+          padding: '0 1.5rem', height: 56,
+          display: 'flex', alignItems: 'center', gap: 12,
+        }}>
+          {/* Mobile menu button */}
           <button onClick={() => setOpen(true)} className="lg:hidden"
-            style={{ color: 'var(--fg-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--fg-muted)' }}>
             <Menu size={20} />
           </button>
 
-          {/* Breadcrumb */}
+          {/* Page title */}
           <div style={{ flex: 1 }}>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', color: 'var(--fg-subtle)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              {navItems.find(n => pathname.startsWith(n.href) || pathname === n.href)?.label || 'Admin'}
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.7rem', color: 'var(--fg-subtle)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              {currentPage?.label || 'Admin'}
             </p>
           </div>
 
           {/* Theme toggle */}
           <button onClick={toggle}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--bg-raised)', border: '1px solid var(--border-gold)', borderRadius: 100, color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: '0.7rem', transition: 'all var(--transition)' }}>
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '4px 12px', borderRadius: 100,
+              background: 'var(--bg-raised)', border: '1px solid var(--border-gold)',
+              color: 'var(--fg-muted)', cursor: 'pointer',
+              fontFamily: 'var(--font-body)', fontSize: '0.68rem',
+              letterSpacing: '0.08em', transition: 'all 0.2s ease',
+            }}>
             {isLight ? <Moon size={13} /> : <Sun size={13} />}
             <span>{isLight ? 'Dark' : 'Light'}</span>
           </button>
         </header>
 
-        <main style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}>
+        {/* Page content */}
+        <main style={{ flex: 1, padding: '1.75rem', overflowY: 'auto' }}>
           {children}
         </main>
       </div>

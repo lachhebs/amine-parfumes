@@ -8,6 +8,15 @@ export const metadata: Metadata = {
   title: 'Amine Parfumes – Créations d\'Exception',
   description: 'Découvrez notre collection exclusive de parfums de luxe. Livraison à domicile au Maroc.',
   keywords: 'parfums, fragrances, luxe, Maroc, Agadir, Amine Parfumes',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
   openGraph: { title: 'Amine Parfumes', description: 'Créations d\'Exception', type: 'website' },
 };
 
