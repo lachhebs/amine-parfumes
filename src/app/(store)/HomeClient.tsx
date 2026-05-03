@@ -1,296 +1,489 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-
 import { useLang } from '@/contexts/LangContext';
 import ProductCard from '@/components/store/ProductCard';
 import type { Product, Category } from '@/types';
 
 interface Props { featured: Product[]; newProducts: Product[]; categories: Category[]; }
 
-/* ── Inline SVG perfume bottle illustrations ── */
-function BottleClassic({ className = '' }: { className?: string }) {
+/* ─── Hero perfume data ─── */
+const HERO_PERFUMES = [
+  {
+    id: 0,
+    src: '/images/hero-armani.jpg',
+    name: 'Stronger With You',
+    sub: 'Intensely · Emporio Armani',
+    mood: 'Chaud & Ambré',
+    accent: '#c9601a',
+    glow: 'rgba(201,96,26,0.35)',
+    tag: 'Homme',
+  },
+  {
+    id: 1,
+    src: '/images/hero-burberry.jpg',
+    name: 'Burberry Her',
+    sub: 'Elixir de Parfum',
+    mood: 'Floral & Fruité',
+    accent: '#c9a0a0',
+    glow: 'rgba(201,160,160,0.3)',
+    tag: 'Femme',
+  },
+  {
+    id: 2,
+    src: '/images/hero-jbg.jpg',
+    name: 'Le Beau',
+    sub: 'Jean Paul Gaultier',
+    mood: 'Boisé & Exotique',
+    accent: '#2d9e6a',
+    glow: 'rgba(45,158,106,0.3)',
+    tag: 'Homme',
+  },
+];
+
+/* ─── Category visual map ─── */
+const CAT_META: Record<string, { emoji: string; color: string; bg: string }> = {
+  'homme':      { emoji: '🏛️', color: '#c9a227', bg: 'linear-gradient(135deg,#0a0e1a,#1a1408)' },
+  'femme':      { emoji: '🌸', color: '#f9a8d4', bg: 'linear-gradient(135deg,#1a0a18,#2d0f24)' },
+  'mixte':      { emoji: '✨', color: '#e6c97a', bg: 'linear-gradient(135deg,#0f1218,#1a1a20)' },
+  'sets-packs': { emoji: '🎁', color: '#86efac', bg: 'linear-gradient(135deg,#060e10,#0a1a14)' },
+  'nouveautes': { emoji: '💫', color: '#c4b5fd', bg: 'linear-gradient(135deg,#0d0820,#180d30)' },
+  'dupes':      { emoji: '💎', color: '#7dd3fc', bg: 'linear-gradient(135deg,#050e1a,#0a1428)' },
+  'decants':    { emoji: '🧪', color: '#fca5a5', bg: 'linear-gradient(135deg,#160808,#200f0f)' },
+};
+
+/* ─── Animated hero section ─── */
+function HeroSection({ lang }: { lang: string; t: (k: string) => string }) {
+  const [active, setActive] = useState(0);
+  const [prev, setPrev] = useState<number | null>(null);
+  const [animating, setAnimating] = useState(false);
+  const [mouseX, setMouseX] = useState(0);
+  const [mouseY, setMouseY] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  /* auto-advance */
+  useEffect(() => {
+    timerRef.current = setTimeout(() => advance((active + 1) % 3), 5000);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [active]);
+
+  /* mouse parallax */
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const fn = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      setMouseX((e.clientX - rect.left) / rect.width - 0.5);
+      setMouseY((e.clientY - rect.top) / rect.height - 0.5);
+    };
+    el.addEventListener('mousemove', fn);
+    return () => el.removeEventListener('mousemove', fn);
+  }, []);
+
+  const advance = (next: number) => {
+    if (animating) return;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setAnimating(true);
+    setPrev(active);
+    setActive(next);
+    setTimeout(() => { setPrev(null); setAnimating(false); }, 800);
+  };
+
+  const cur = HERO_PERFUMES[active];
+  const prv = prev !== null ? HERO_PERFUMES[prev] : null;
+
+  const parallaxStyle = (depth: number) => ({
+    transform: `translate(${mouseX * depth}px, ${mouseY * depth}px)`,
+    transition: 'transform 0.15s ease-out',
+  });
+
   return (
-    <svg viewBox="0 0 120 200" className={className} xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="bottleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor="#c9a227" stopOpacity="0.6"/>
-          <stop offset="40%"  stopColor="#f0d88a" stopOpacity="0.9"/>
-          <stop offset="100%" stopColor="#856118" stopOpacity="0.7"/>
-        </linearGradient>
-        <linearGradient id="liquidGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%"   stopColor="#e6c97a" stopOpacity="0.8"/>
-          <stop offset="100%" stopColor="#c9a227" stopOpacity="0.4"/>
-        </linearGradient>
-        <linearGradient id="capGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%"   stopColor="#f0d88a"/>
-          <stop offset="100%" stopColor="#856118"/>
-        </linearGradient>
-      </defs>
-      {/* Cap */}
-      <rect x="42" y="8" width="36" height="14" rx="4" fill="url(#capGrad)"/>
-      <rect x="46" y="6" width="28" height="6" rx="3" fill="#c9a227" opacity="0.8"/>
-      {/* Neck */}
-      <rect x="48" y="22" width="24" height="20" rx="2" fill="url(#bottleGrad)" opacity="0.85"/>
-      {/* Shoulder curve */}
-      <path d="M32 42 Q32 52 24 62 L24 175 Q24 182 32 182 L88 182 Q96 182 96 175 L96 62 Q88 52 88 42 Z"
-        fill="url(#bottleGrad)"/>
-      {/* Liquid inside */}
-      <path d="M29 100 L29 172 Q29 179 36 179 L84 179 Q91 179 91 172 L91 100 Z"
-        fill="url(#liquidGrad)" opacity="0.5"/>
-      {/* Highlight */}
-      <rect x="34" y="65" width="10" height="90" rx="5" fill="white" opacity="0.15"/>
-      {/* Label area */}
-      <rect x="30" y="105" width="60" height="55" rx="3" fill="white" opacity="0.12"/>
-      <text x="60" y="125" textAnchor="middle" fill="#c9a227" fontSize="7" fontFamily="'Cormorant Garamond',serif" fontStyle="italic" opacity="0.9">Amine</text>
-      <text x="60" y="136" textAnchor="middle" fill="#c9a227" fontSize="5" fontFamily="'Jost',sans-serif" letterSpacing="2" opacity="0.7">PARFUMES</text>
-      {/* Bottom edge */}
-      <ellipse cx="60" cy="182" rx="36" ry="4" fill="#856118" opacity="0.3"/>
-    </svg>
+    <section ref={sectionRef} style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', display: 'flex', alignItems: 'center', background: '#05060d' }}>
+
+      {/* ── Background image layers ── */}
+      {HERO_PERFUMES.map((p, i) => (
+        <div key={p.id} style={{
+          position: 'absolute', inset: 0,
+          opacity: i === active ? 1 : i === prev ? 0 : 0,
+          transition: 'opacity 0.9s ease',
+          zIndex: i === active ? 1 : i === prev ? 2 : 0,
+        }}>
+          {/* Blurred bg */}
+          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+            <Image src={p.src} alt="" fill className="object-cover"
+              style={{ filter: 'blur(40px) brightness(0.25) saturate(1.4)', transform: 'scale(1.15)' }}
+              priority={i === 0} />
+          </div>
+          {/* Color overlay tinted to perfume accent */}
+          <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 70% 60% at 70% 50%, ${p.glow} 0%, transparent 65%)` }} />
+          {/* Dark vignette */}
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(5,6,13,0.85) 0%, rgba(5,6,13,0.4) 50%, rgba(5,6,13,0.6) 100%)' }} />
+        </div>
+      ))}
+
+      {/* ── Content grid ── */}
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 w-full" style={{ position: 'relative', zIndex: 10, paddingTop: '5rem', paddingBottom: '4rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', alignItems: 'center' }} className="grid-cols-1 lg:grid-cols-2">
+
+          {/* LEFT — Text */}
+          <div>
+            {/* Slide badge */}
+            <div key={`badge-${active}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: '1.5rem', animation: 'fadeSlideUp 0.6s ease forwards', opacity: 0 }}>
+              <div style={{ height: 1, width: 40, background: `linear-gradient(90deg, transparent, ${cur.accent})` }} />
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', letterSpacing: '0.35em', color: cur.accent, textTransform: 'uppercase' }}>
+                {cur.tag} · {cur.mood}
+              </span>
+            </div>
+
+            {/* Main brand name */}
+            <div key={`title-${active}`} style={{ overflow: 'hidden', marginBottom: '0.5rem' }}>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.8rem,7vw,5rem)', color: '#fdf8ee', lineHeight: 1, letterSpacing: '-0.02em', animation: 'fadeSlideUp 0.65s ease 0.1s forwards', opacity: 0 }}>
+                {cur.name}
+              </h1>
+            </div>
+
+            {/* Sub name */}
+            <div key={`sub-${active}`} style={{ overflow: 'hidden', marginBottom: '2rem' }}>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1rem,2.5vw,1.5rem)', color: cur.accent, fontStyle: 'italic', animation: 'fadeSlideUp 0.65s ease 0.2s forwards', opacity: 0 }}>
+                {cur.sub}
+              </p>
+            </div>
+
+            {/* Description */}
+            <p key={`desc-${active}`} style={{ fontFamily: 'var(--font-body)', fontSize: '0.82rem', color: 'rgba(253,248,238,0.55)', lineHeight: 1.85, maxWidth: 400, marginBottom: '2.5rem', animation: 'fadeSlideUp 0.65s ease 0.3s forwards', opacity: 0 }}>
+              {lang === 'ar'
+                ? 'اكتشف هذا العطر الاستثنائي من مجموعتنا المختارة. متوفر الآن مع توصيل لجميع أنحاء المغرب.'
+                : 'Découvrez ce parfum d\'exception, disponible maintenant dans notre boutique avec livraison partout au Maroc.'}
+            </p>
+
+            {/* CTAs */}
+            <div key={`ctas-${active}`} style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', animation: 'fadeSlideUp 0.65s ease 0.4s forwards', opacity: 0 }}>
+              <Link href="/catalogue" className="btn-gold-filled" style={{ fontSize: '0.7rem' }}>
+                {lang === 'ar' ? 'تسوق الآن' : 'Commander maintenant'}
+              </Link>
+              <Link href="/catalogue" className="btn-gold" style={{ fontSize: '0.7rem' }}>
+                <span>{lang === 'ar' ? 'عرض الكل' : 'Voir la collection'}</span>
+              </Link>
+            </div>
+
+            {/* Trust strip */}
+            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '2.5rem', flexWrap: 'wrap' }}>
+              {[
+                { icon: '🚚', label: lang === 'ar' ? 'توصيل للمغرب' : 'Livraison Maroc' },
+                { icon: '💵', label: lang === 'ar' ? 'دفع عند الاستلام' : 'Paiement livraison' },
+                { icon: '✅', label: lang === 'ar' ? 'أصالة مضمونة' : 'Authenticité' },
+              ].map((b, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 13 }}>{b.icon}</span>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.62rem', color: 'rgba(253,248,238,0.3)', letterSpacing: '0.08em' }}>{b.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* RIGHT — Animated perfume photo */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', minHeight: 520 }} className="hidden lg:flex">
+
+            {/* Glow rings behind bottle */}
+            <div style={{
+              position: 'absolute', width: 360, height: 360, borderRadius: '50%',
+              border: `1px solid ${cur.accent}25`,
+              top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+              animation: 'ringPulse 3s ease-in-out infinite',
+              transition: 'border-color 0.9s ease',
+            }} />
+            <div style={{
+              position: 'absolute', width: 260, height: 260, borderRadius: '50%',
+              border: `1px solid ${cur.accent}15`,
+              top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+            }} />
+            {/* Glow blob */}
+            <div style={{
+              position: 'absolute', width: 280, height: 280, borderRadius: '50%',
+              background: `radial-gradient(circle, ${cur.glow} 0%, transparent 70%)`,
+              top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+              transition: 'background 0.9s ease',
+              filter: 'blur(30px)',
+            }} />
+
+            {/* Outgoing bottle */}
+            {prv && (
+              <div style={{
+                position: 'absolute',
+                animation: 'bottleOut 0.8s cubic-bezier(0.4,0,0.2,1) forwards',
+                zIndex: 1,
+              }}>
+                <div style={{ ...parallaxStyle(12), width: 340, height: 420, position: 'relative' }}>
+                  <Image src={prv.src} alt={prv.name} fill className="object-contain"
+                    style={{ filter: 'drop-shadow(0 32px 64px rgba(0,0,0,0.5))' }} />
+                </div>
+              </div>
+            )}
+
+            {/* Active bottle */}
+            <div key={`bottle-${active}`} style={{
+              position: 'relative', zIndex: 2,
+              animation: 'bottleIn 0.9s cubic-bezier(0.34,1.56,0.64,1) forwards',
+              opacity: 0,
+            }}>
+              {/* Floating wrapper */}
+              <div style={{ ...parallaxStyle(18), animation: 'floatBottle 6s ease-in-out infinite', width: 340, height: 420, position: 'relative' }}>
+                <Image src={cur.src} alt={cur.name} fill className="object-contain"
+                  priority
+                  style={{ filter: `drop-shadow(0 40px 80px ${cur.glow}) drop-shadow(0 0 60px ${cur.glow})` }} />
+              </div>
+            </div>
+
+            {/* Floating label */}
+            <div key={`label-${active}`} style={{
+              position: 'absolute', bottom: 30, right: 0,
+              background: 'rgba(5,6,13,0.8)',
+              border: `1px solid ${cur.accent}30`,
+              backdropFilter: 'blur(12px)',
+              padding: '0.75rem 1.25rem',
+              borderRadius: 8,
+              animation: 'fadeSlideUp 0.7s ease 0.5s forwards',
+              opacity: 0,
+              minWidth: 160,
+            }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.58rem', color: cur.accent, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 3 }}>
+                {cur.mood}
+              </p>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', color: '#fdf8ee' }}>
+                {cur.name}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Slide controls ── */}
+      <div style={{ position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)', zIndex: 20, display: 'flex', gap: 10, alignItems: 'center' }}>
+        {HERO_PERFUMES.map((p, i) => (
+          <button key={i} onClick={() => advance(i)}
+            style={{
+              width: i === active ? 32 : 8,
+              height: 8,
+              borderRadius: 4,
+              background: i === active ? cur.accent : 'rgba(253,248,238,0.2)',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+              padding: 0,
+            }}
+            aria-label={`Slide ${i + 1}`}
+          />
+        ))}
+      </div>
+
+      {/* ── Side nav arrows ── */}
+      {(['prev','next'] as const).map((dir) => (
+        <button key={dir}
+          onClick={() => advance(dir === 'next' ? (active + 1) % 3 : (active + 2) % 3)}
+          style={{
+            position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+            [dir === 'prev' ? 'left' : 'right']: '1.5rem',
+            zIndex: 20,
+            width: 44, height: 44, borderRadius: '50%',
+            background: 'rgba(5,6,13,0.6)',
+            border: '1px solid rgba(253,248,238,0.1)',
+            color: 'rgba(253,248,238,0.6)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 18,
+            transition: 'all 0.2s ease',
+            backdropFilter: 'blur(8px)',
+          }}
+          className="hidden sm:flex"
+        >
+          {dir === 'prev' ? '‹' : '›'}
+        </button>
+      ))}
+
+      {/* Inline keyframes */}
+      <style>{`
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(22px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes bottleIn {
+          from { opacity: 0; transform: scale(0.82) translateY(30px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes bottleOut {
+          from { opacity: 1; transform: scale(1) translateY(0); }
+          to   { opacity: 0; transform: scale(0.9) translateY(-20px); }
+        }
+        @keyframes floatBottle {
+          0%,100% { transform: translateY(0px); }
+          50%      { transform: translateY(-14px); }
+        }
+        @keyframes ringPulse {
+          0%,100% { transform: translate(-50%,-50%) scale(1);   opacity: 0.6; }
+          50%      { transform: translate(-50%,-50%) scale(1.06); opacity: 1; }
+        }
+        @keyframes particleDrift {
+          0%   { transform: translateY(0) scale(1);   opacity:0.7; }
+          100% { transform: translateY(-100px) translateX(15px) scale(0); opacity:0; }
+        }
+      `}</style>
+    </section>
   );
 }
 
-function BottleFlacon({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 100 200" className={className} xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="fg2" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor="#8b5cf6" stopOpacity="0.5"/>
-          <stop offset="50%"  stopColor="#c4b5fd" stopOpacity="0.8"/>
-          <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.6"/>
-        </linearGradient>
-        <linearGradient id="lq2" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%"   stopColor="#ddd6fe" stopOpacity="0.7"/>
-          <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.4"/>
-        </linearGradient>
-      </defs>
-      {/* Spray pump */}
-      <rect x="44" y="4" width="12" height="18" rx="3" fill="#c9a227" opacity="0.9"/>
-      <rect x="38" y="18" width="24" height="8" rx="2" fill="#e6c97a" opacity="0.8"/>
-      <rect x="56" y="10" width="18" height="3" rx="1.5" fill="#c9a227" opacity="0.7"/>
-      {/* Neck */}
-      <rect x="42" y="26" width="16" height="16" rx="2" fill="url(#fg2)"/>
-      {/* Body — square flacon */}
-      <rect x="14" y="42" width="72" height="140" rx="8" fill="url(#fg2)"/>
-      {/* Liquid */}
-      <rect x="19" y="110" width="62" height="68" rx="6" fill="url(#lq2)" opacity="0.5"/>
-      {/* Highlight shine */}
-      <rect x="22" y="50" width="8" height="100" rx="4" fill="white" opacity="0.18"/>
-      {/* Label */}
-      <rect x="22" y="90" width="56" height="50" rx="4" fill="white" opacity="0.1"/>
-      <text x="50" y="110" textAnchor="middle" fill="#e6c97a" fontSize="6" fontFamily="'Cormorant Garamond',serif" fontStyle="italic" opacity="0.9">Amine</text>
-      <text x="50" y="122" textAnchor="middle" fill="#c9a227" fontSize="4.5" fontFamily="'Jost',sans-serif" letterSpacing="2" opacity="0.7">PARFUMES</text>
-      <ellipse cx="50" cy="182" rx="36" ry="4" fill="#6d28d9" opacity="0.2"/>
-    </svg>
-  );
-}
-
-function BottleOud({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 90 200" className={className} xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="fg3" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor="#c9a227" stopOpacity="0.5"/>
-          <stop offset="50%"  stopColor="#f0d88a" stopOpacity="0.9"/>
-          <stop offset="100%" stopColor="#856118" stopOpacity="0.6"/>
-        </linearGradient>
-        <radialGradient id="lq3" cx="40%" cy="40%" r="60%">
-          <stop offset="0%"   stopColor="#fde68a" stopOpacity="0.7"/>
-          <stop offset="100%" stopColor="#92400e" stopOpacity="0.5"/>
-        </radialGradient>
-      </defs>
-      {/* Stopper */}
-      <ellipse cx="45" cy="18" rx="12" ry="14" fill="url(#fg3)"/>
-      <rect x="42" y="14" width="6" height="18" rx="3" fill="#c9a227" opacity="0.9"/>
-      {/* Shoulder */}
-      <path d="M20 46 Q10 70 10 90 L10 172 Q10 180 18 180 L72 180 Q80 180 80 172 L80 90 Q80 70 70 46 Z"
-        fill="url(#fg3)"/>
-      {/* Liquid */}
-      <path d="M15 110 L15 170 Q15 177 22 177 L68 177 Q75 177 75 170 L75 110 Z"
-        fill="url(#lq3)" opacity="0.5"/>
-      {/* Highlight */}
-      <path d="M18 55 Q16 70 16 90 L16 140" stroke="white" strokeWidth="6" strokeLinecap="round" opacity="0.15" fill="none"/>
-      {/* Label */}
-      <rect x="18" y="108" width="54" height="44" rx="3" fill="white" opacity="0.1"/>
-      <text x="45" y="126" textAnchor="middle" fill="#c9a227" fontSize="5.5" fontFamily="'Cormorant Garamond',serif" fontStyle="italic" opacity="0.9">Amine</text>
-      <text x="45" y="137" textAnchor="middle" fill="#c9a227" fontSize="4" fontFamily="'Jost',sans-serif" letterSpacing="2" opacity="0.7">PARFUMES</text>
-      <ellipse cx="45" cy="180" rx="32" ry="3.5" fill="#92400e" opacity="0.25"/>
-    </svg>
-  );
-}
-
-/* ── Floating particle dots ── */
-function Particles() {
-  const dots = [
-    { x: '15%', delay: '0s',   dur: '4s',  size: 3 },
-    { x: '35%', delay: '0.8s', dur: '5s',  size: 2 },
-    { x: '55%', delay: '1.4s', dur: '3.5s',size: 4 },
-    { x: '72%', delay: '0.3s', dur: '6s',  size: 2 },
-    { x: '88%', delay: '2s',   dur: '4.5s',size: 3 },
-    { x: '25%', delay: '1.1s', dur: '5.5s',size: 2 },
-    { x: '65%', delay: '0.6s', dur: '4s',  size: 3 },
+/* ─── Scrolling marquee of perfume thumbnails ─── */
+function PerfumeMarquee() {
+  const images = [
+    { src: '/images/hero-armani.jpg',   label: 'Stronger With You Intensely' },
+    { src: '/images/hero-burberry.jpg', label: 'Burberry Her Elixir' },
+    { src: '/images/hero-jbg.jpg',      label: 'Le Beau JPG' },
+    { src: '/images/hero-armani.jpg',   label: 'Stronger With You Intensely' },
+    { src: '/images/hero-burberry.jpg', label: 'Burberry Her Elixir' },
+    { src: '/images/hero-jbg.jpg',      label: 'Le Beau JPG' },
   ];
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {dots.map((d, i) => (
-        <div key={i} className="absolute rounded-full"
-          style={{
-            left: d.x, bottom: '0%', width: d.size, height: d.size,
-            background: 'radial-gradient(circle, #c9a227, #856118)',
-            animation: `particleDrift ${d.dur} ease-out infinite`,
-            animationDelay: d.delay, opacity: 0.6,
-          }} />
-      ))}
+    <div style={{ overflow: 'hidden', padding: '2rem 0', borderTop: '1px solid var(--border-gold)', borderBottom: '1px solid var(--border-gold)', background: 'var(--bg-surface)' }}>
+      <div style={{ display: 'flex', gap: '2rem', animation: 'marqueeScroll 18s linear infinite', width: 'max-content' }}>
+        {images.map((img, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 6, overflow: 'hidden', position: 'relative', border: '1px solid var(--border-gold)' }}>
+              <Image src={img.src} alt={img.label} fill className="object-cover" />
+            </div>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--fg-muted)', whiteSpace: 'nowrap', fontStyle: 'italic' }}>
+              {img.label}
+            </span>
+            <span style={{ color: 'var(--gold-mid)', opacity: 0.4, fontSize: '1.2rem' }}>✦</span>
+          </div>
+        ))}
+      </div>
+      <style>{`
+        @keyframes marqueeScroll {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+      `}</style>
     </div>
   );
 }
 
-/* ── Category visual map ── */
-const CAT_ICONS: Record<string, { emoji: string; color: string; gradient: string }> = {
-  'homme':      { emoji: '🏛️',  color: '#c9a227', gradient: 'linear-gradient(135deg,#0a0e1a,#1a1408)' },
-  'femme':      { emoji: '🌸',  color: '#f9a8d4', gradient: 'linear-gradient(135deg,#1a0a18,#2d0f24)' },
-  'mixte':      { emoji: '✨',  color: '#e6c97a', gradient: 'linear-gradient(135deg,#0f1218,#1a1a20)' },
-  'sets-packs': { emoji: '🎁',  color: '#86efac', gradient: 'linear-gradient(135deg,#060e10,#0a1a14)' },
-  'nouveautes': { emoji: '💫',  color: '#c4b5fd', gradient: 'linear-gradient(135deg,#0d0820,#180d30)' },
-  'dupes':      { emoji: '💎',  color: '#7dd3fc', gradient: 'linear-gradient(135deg,#050e1a,#0a1428)' },
-  'decants':    { emoji: '🧪',  color: '#fca5a5', gradient: 'linear-gradient(135deg,#160808,#200f0f)' },
-};
+/* ─── Product showcase with real photo alongside ─── */
+function ShowcaseStrip({ lang }: { lang: string }) {
+  const perfumes = [
+    { src: '/images/hero-armani.jpg', accent: '#c9601a', glow: 'rgba(201,96,26,0.3)',
+      name_fr: 'Stronger With You Intensely', name_ar: 'ستيرونغر ويذ يو إنتنسلي',
+      brand: 'Emporio Armani', tag_fr: 'Homme · EDP', tag_ar: 'رجالي · EDP',
+      href: '/catalogue?gender=homme' },
+    { src: '/images/hero-burberry.jpg', accent: '#d4a0a0', glow: 'rgba(212,160,160,0.3)',
+      name_fr: 'Burberry Her Elixir', name_ar: 'بربري هير إليكسير',
+      brand: 'Burberry', tag_fr: 'Femme · EDP', tag_ar: 'نسائي · EDP',
+      href: '/catalogue?gender=femme' },
+    { src: '/images/hero-jbg.jpg', accent: '#2d9e6a', glow: 'rgba(45,158,106,0.3)',
+      name_fr: 'Le Beau', name_ar: 'لو بو',
+      brand: 'Jean Paul Gaultier', tag_fr: 'Homme · EDT', tag_ar: 'رجالي · EDT',
+      href: '/catalogue?gender=homme' },
+  ];
 
+  return (
+    <section style={{ background: 'var(--bg-base)', padding: '5rem 0' }}>
+      <div className="max-w-7xl mx-auto px-4 lg:px-8">
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.62rem', letterSpacing: '0.35em', color: 'var(--gold-mid)', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
+            {lang === 'ar' ? 'أبرز العطور' : 'Nos Coups de Cœur'}
+          </p>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem,4vw,2.8rem)', color: 'var(--fg-primary)' }}>
+            {lang === 'ar' ? 'العطور المميزة' : 'Fragrances Iconiques'}
+          </h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }} className="grid-cols-1 sm:grid-cols-3">
+          {perfumes.map((p, i) => (
+            <Link key={i} href={p.href}
+              style={{ textDecoration: 'none', display: 'block', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-gold)', background: 'var(--bg-surface)', transition: 'all 0.4s cubic-bezier(0.34,1.56,0.64,1)', position: 'relative' }}
+              className="group hover:-translate-y-2 hover:shadow-2xl">
+
+              {/* Photo */}
+              <div style={{ position: 'relative', aspectRatio: '1/1', overflow: 'hidden' }}>
+                <Image src={p.src} alt={lang === 'ar' ? p.name_ar : p.name_fr} fill className="object-cover"
+                  style={{ transition: 'transform 0.7s ease' }}
+                  sizes="(max-width:768px) 100vw, 33vw" />
+                {/* Hover overlay */}
+                <div style={{
+                  position: 'absolute', inset: 0, opacity: 0, transition: 'opacity 0.4s ease',
+                  background: `linear-gradient(to top, ${p.glow} 0%, transparent 60%)`,
+                }}
+                  className="group-hover:opacity-100" />
+                {/* Glow on hover */}
+                <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+                  width: 120, height: 60, borderRadius: '50%',
+                  background: p.glow, filter: 'blur(20px)',
+                  opacity: 0, transition: 'opacity 0.4s ease' }}
+                  className="group-hover:opacity-100" />
+              </div>
+
+              {/* Info */}
+              <div style={{ padding: '1.25rem' }}>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem', color: p.accent, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+                  {p.brand}
+                </p>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--fg-primary)', marginBottom: '0.4rem', lineHeight: 1.2 }}>
+                  {lang === 'ar' ? p.name_ar : p.name_fr}
+                </h3>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.7rem', color: 'var(--fg-subtle)' }}>
+                  {lang === 'ar' ? p.tag_ar : p.tag_fr}
+                </p>
+
+                {/* Accent bar */}
+                <div style={{ height: 2, width: 0, background: p.accent, marginTop: '1rem', borderRadius: 1, transition: 'width 0.4s ease' }}
+                  className="group-hover:w-full" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Main export ─── */
 export default function HomeClient({ featured, newProducts, categories }: Props) {
   const { lang, t } = useLang();
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
 
-      {/* ══════════════ HERO ══════════════ */}
-      <section className="relative min-h-screen flex items-center overflow-hidden">
-        <Particles />
+      {/* 1. Hero with animated real photos */}
+      <HeroSection lang={lang} t={t as (k:string)=>string} />
 
-        {/* BG gradient orbs */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/3 left-1/4 w-80 h-80 rounded-full blur-3xl opacity-10"
-            style={{ background: 'radial-gradient(circle, #c9a227, transparent)' }} />
-          <div className="absolute top-1/2 right-1/5 w-64 h-64 rounded-full blur-3xl opacity-8"
-            style={{ background: 'radial-gradient(circle, #7c3aed, transparent)', animationDelay: '2s' }} />
-        </div>
+      {/* 2. Scrolling marquee */}
+      <PerfumeMarquee />
 
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center pt-24 pb-16">
-          {/* Text side */}
-          <div>
-            <div className="flex items-center gap-3 mb-6" style={{ animation: 'fadeUp 0.6s ease forwards', opacity: 0 }}>
-              <div style={{ height: 1, width: 48, background: 'linear-gradient(90deg, transparent, var(--gold-mid))' }} />
-              <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.65rem', letterSpacing: '0.35em', color: 'var(--gold-mid)', textTransform: 'uppercase' }}>
-                {t('hero_badge')}
-              </span>
-            </div>
-
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3rem,8vw,5.5rem)', color: 'var(--fg-primary)', lineHeight: 1, letterSpacing: '-0.02em', animation: 'fadeUp 0.6s ease 0.15s forwards', opacity: 0 }}>
-              Amine<br />
-              <em className="text-gold-gradient">Parfumes</em>
-            </h1>
-
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--fg-muted)', letterSpacing: '0.2em', textTransform: 'uppercase', marginTop: '1.5rem', marginBottom: '2.5rem', animation: 'fadeUp 0.6s ease 0.3s forwards', opacity: 0, maxWidth: 420 }}>
-              {lang === 'ar'
-                ? 'اكتشف عطور استثنائية تُصنع من أجلك'
-                : "Des fragrances d'exception, créées pour vous"}
-            </p>
-
-            <div className="flex flex-wrap gap-4" style={{ animation: 'fadeUp 0.6s ease 0.45s forwards', opacity: 0 }}>
-              <Link href="/catalogue" className="btn-gold"><span>{t('hero_cta')}</span></Link>
-              <Link href="/catalogue?category=nouveautes" className="btn-gold">
-                <span>{lang === 'ar' ? 'وصل حديثاً' : 'Nouveautés'}</span>
-              </Link>
-              <Link href="/catalogue?category=dupes" className="btn-gold">
-                <span>Dupes & Inspirations</span>
-              </Link>
-            </div>
-
-            {/* Trust badges */}
-            <div className="flex items-center gap-6 mt-10" style={{ animation: 'fadeUp 0.6s ease 0.6s forwards', opacity: 0 }}>
-              {[
-                { icon: '🚚', label: lang === 'ar' ? 'توصيل للمغرب' : 'Livraison Maroc' },
-                { icon: '💵', label: lang === 'ar' ? 'دفع عند الاستلام' : 'Paiement livraison' },
-                { icon: '✅', label: lang === 'ar' ? 'أصالة مضمونة' : 'Authenticité garantie' },
-              ].map((b, i) => (
-                <div key={i} className="flex items-center gap-1.5">
-                  <span style={{ fontSize: 14 }}>{b.icon}</span>
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.65rem', color: 'var(--fg-subtle)', letterSpacing: '0.08em' }}>{b.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Bottles side — animated SVG illustrations */}
-          <div className="relative h-[520px] hidden lg:flex items-center justify-center">
-            {/* Glow rings */}
-            <div className="absolute w-72 h-72 rounded-full glow-pulse"
-              style={{ border: '1px solid rgba(201,162,39,0.1)', top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }} />
-            <div className="absolute w-56 h-56 rounded-full"
-              style={{ border: '1px solid rgba(201,162,39,0.06)', top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }} />
-
-            {/* Left bottle */}
-            <div className="absolute left-8 top-16 float-b"
-              style={{ filter: 'drop-shadow(0 24px 48px rgba(139,92,246,0.3))' }}>
-              <BottleFlacon className="w-24 h-auto opacity-80" />
-            </div>
-
-            {/* Center bottle — main */}
-            <div className="relative float-a z-10"
-              style={{ filter: 'drop-shadow(0 32px 64px rgba(201,162,39,0.35))' }}>
-              <BottleClassic className="w-36 h-auto" />
-              {/* Sparkles around center bottle */}
-              {['top-0 right-0', 'bottom-8 left-0', 'top-1/2 -right-4'].map((pos, i) => (
-                <div key={i} className={`absolute ${pos}`}
-                  style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold-mid)', animation: `glowPulse ${2.5 + i}s ease-in-out infinite`, animationDelay: `${i * 0.8}s` }} />
-              ))}
-            </div>
-
-            {/* Right bottle */}
-            <div className="absolute right-4 bottom-20 float-c"
-              style={{ filter: 'drop-shadow(0 20px 40px rgba(201,162,39,0.25))' }}>
-              <BottleOud className="w-20 h-auto opacity-85" />
-            </div>
-
-            {/* Decorative lines */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-10" viewBox="0 0 400 520">
-              <circle cx="200" cy="260" r="160" stroke="#c9a227" strokeWidth="0.5" fill="none" strokeDasharray="4 8"/>
-              <circle cx="200" cy="260" r="110" stroke="#c9a227" strokeWidth="0.5" fill="none" strokeDasharray="2 12"/>
-            </svg>
-          </div>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 opacity-30">
-          <div style={{ width: 1, height: 48, background: 'linear-gradient(180deg, transparent, var(--gold-mid))' }} />
-        </div>
-      </section>
-
-      {/* ══════════════ CATEGORIES ══════════════ */}
+      {/* 3. Categories grid */}
       {categories.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 lg:px-8 py-20">
-          <div className="text-center mb-12">
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.65rem', letterSpacing: '0.3em', color: 'var(--gold-mid)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.62rem', letterSpacing: '0.35em', color: 'var(--gold-mid)', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
               {lang === 'ar' ? 'مجموعاتنا' : 'Collections'}
             </p>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem,4vw,2.5rem)', color: 'var(--fg-primary)' }}>
               {t('categories_title')}
             </h2>
           </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}>
             {categories.map((cat) => {
-              const meta = CAT_ICONS[cat.slug] || { emoji: '✨', color: '#c9a227', gradient: 'linear-gradient(135deg,#0f1628,#151e36)' };
+              const meta = CAT_META[cat.slug] || { emoji: '✨', color: '#c9a227', bg: 'linear-gradient(135deg,#0f1628,#151e36)' };
               return (
                 <Link key={cat.id} href={`/catalogue?category=${cat.slug}`} className="category-card"
-                  style={{ background: meta.gradient, minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '1.25rem' }}>
-                  <div className="cat-bg absolute inset-0 opacity-20"
-                    style={{ background: `radial-gradient(ellipse at 60% 30%, ${meta.color}40, transparent)` }} />
-                  <span style={{ fontSize: 28, marginBottom: '0.5rem', display: 'block' }}>{meta.emoji}</span>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', color: '#fdf8ee', lineHeight: 1.2 }}>
+                  style={{ background: meta.bg, minHeight: 130, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '1.1rem', position: 'relative' }}>
+                  <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 60% 20%, ${meta.color}30, transparent)`, borderRadius: 6 }} />
+                  <span style={{ fontSize: 26, marginBottom: '0.4rem', display: 'block' }}>{meta.emoji}</span>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: '#fdf8ee', lineHeight: 1.2, position: 'relative' }}>
                     {lang === 'ar' ? cat.name_ar : cat.name_fr}
                   </h3>
-                  <div style={{ height: 1, width: 0, background: meta.color, transition: 'width 0.3s ease', marginTop: '0.4rem' }}
-                    className="cat-line" />
                 </Link>
               );
             })}
@@ -298,105 +491,81 @@ export default function HomeClient({ featured, newProducts, categories }: Props)
         </section>
       )}
 
-      {/* ══════════════ FEATURED PRODUCTS ══════════════ */}
+      {/* 4. Iconic perfume showcase */}
+      <ShowcaseStrip lang={lang} />
+
+      {/* 5. Featured products */}
       {featured.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 lg:px-8 py-20">
-          <div className="divider-gold mb-16" />
-          <div className="flex items-end justify-between mb-10">
-            <div>
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.65rem', letterSpacing: '0.3em', color: 'var(--gold-mid)', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
-                {lang === 'ar' ? 'الأكثر طلباً' : 'Top Ventes'}
-              </p>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem,3vw,2.2rem)', color: 'var(--fg-primary)' }}>
-                {t('featured_title')}
-              </h2>
+        <section style={{ background: 'var(--bg-surface)', padding: '5rem 0' }}>
+          <div className="max-w-7xl mx-auto px-4 lg:px-8">
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '2.5rem' }}>
+              <div>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.62rem', letterSpacing: '0.3em', color: 'var(--gold-mid)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                  {lang === 'ar' ? 'الأكثر طلباً' : 'Top Ventes'}
+                </p>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem,3vw,2.2rem)', color: 'var(--fg-primary)' }}>
+                  {t('featured_title')}
+                </h2>
+              </div>
+              <Link href="/catalogue?featured=true"
+                style={{ fontFamily: 'var(--font-body)', fontSize: '0.68rem', color: 'var(--gold-dark)', letterSpacing: '0.15em', textTransform: 'uppercase', textDecoration: 'none' }}
+                className="hidden sm:block">
+                {lang === 'ar' ? 'عرض الكل ←' : 'Voir tout →'}
+              </Link>
             </div>
-            <Link href="/catalogue?featured=true"
-              style={{ fontFamily: 'var(--font-body)', fontSize: '0.7rem', color: 'var(--gold-dark)', letterSpacing: '0.15em', textTransform: 'uppercase', textDecoration: 'none' }}
-              className="hidden sm:block hover:text-[var(--gold-mid)] transition-colors">
-              {lang === 'ar' ? 'عرض الكل ←' : 'Voir tout →'}
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-            {featured.map((p) => <ProductCard key={p.id} product={p} />)}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.25rem' }}>
+              {featured.map((p) => <ProductCard key={p.id} product={p} />)}
+            </div>
           </div>
         </section>
       )}
 
-      {/* ══════════════ BRAND STRIP ══════════════ */}
-      <section className="py-20 relative overflow-hidden" style={{ background: 'var(--bg-surface)' }}>
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-5"
-            style={{ background: 'radial-gradient(circle, var(--gold-mid), transparent)' }} />
-        </div>
-        <div className="divider-gold" />
-        <div className="max-w-4xl mx-auto px-4 text-center py-16 relative">
-          {/* Center bottle decoration */}
-          <div className="flex justify-center mb-8">
-            <div className="float-a" style={{ filter: 'drop-shadow(0 16px 32px rgba(201,162,39,0.2))' }}>
-              <BottleClassic className="w-20 h-auto opacity-60" />
-            </div>
-          </div>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.65rem', letterSpacing: '0.4em', color: 'var(--gold-dark)', textTransform: 'uppercase', marginBottom: '1rem' }}>
-            amine.parfume
-          </p>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem,4vw,3rem)', color: 'var(--fg-primary)', fontStyle: 'italic', marginBottom: '1rem' }}>
-            {lang === 'ar' ? 'فن العطر في أرقى صوره' : "L'art du parfum dans sa plus haute expression"}
-          </h2>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.82rem', color: 'var(--fg-muted)', maxWidth: 480, margin: '0 auto', lineHeight: 1.8 }}>
-            {lang === 'ar'
-              ? 'كل عطر قصة، كل رائحة ذكرى. اكتشف مجموعتنا من العطور المختارة بعناية فائقة.'
-              : 'Chaque parfum raconte une histoire. Chaque fragrance est une invitation au voyage.'}
-          </p>
-        </div>
-        <div className="divider-gold" />
-      </section>
-
-      {/* ══════════════ NEW ARRIVALS ══════════════ */}
+      {/* 6. New arrivals */}
       {newProducts.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 lg:px-8 py-20">
-          <div className="flex items-end justify-between mb-10">
-            <div>
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.65rem', letterSpacing: '0.3em', color: 'var(--gold-mid)', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
+        <section style={{ padding: '5rem 0' }}>
+          <div className="max-w-7xl mx-auto px-4 lg:px-8">
+            <div style={{ marginBottom: '2.5rem' }}>
+              <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.62rem', letterSpacing: '0.3em', color: 'var(--gold-mid)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
                 {lang === 'ar' ? 'آخر الإضافات' : 'Dernières Arrivées'}
               </p>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem,3vw,2.2rem)', color: 'var(--fg-primary)' }}>
                 {t('new_title')}
               </h2>
             </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-            {newProducts.map((p) => <ProductCard key={p.id} product={p} />)}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.25rem' }}>
+              {newProducts.map((p) => <ProductCard key={p.id} product={p} />)}
+            </div>
           </div>
         </section>
       )}
 
-      {/* ══════════════ WHY US ══════════════ */}
-      <section className="max-w-7xl mx-auto px-4 lg:px-8 pb-24">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {[
-            { icon: '🚚', bottles: <BottleClassic className="w-12 h-auto opacity-40 float-a" />,
-              fr: 'Livraison partout au Maroc', ar: 'توصيل لجميع أنحاء المغرب',
-              dfr: 'Délai 24–72h', dar: 'خلال 24–72 ساعة' },
-            { icon: '💵', bottles: <BottleFlacon className="w-12 h-auto opacity-40 float-b" />,
-              fr: 'Paiement à la livraison', ar: 'الدفع عند الاستلام',
-              dfr: 'Payez en cash à réception', dar: 'ادفع نقداً عند الاستلام' },
-            { icon: '🌹', bottles: <BottleOud className="w-12 h-auto opacity-40 float-c" />,
-              fr: 'Sélection haut de gamme', ar: 'اختيار من أرقى العطور',
-              dfr: 'Fragrances authentiques', dar: 'عطور أصيلة ومختارة' },
-          ].map((item, i) => (
-            <div key={i} className="glass-card p-8 text-center relative overflow-hidden">
-              <div className="flex justify-center mb-4">{item.bottles}</div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', color: 'var(--gold-mid)', marginBottom: '0.5rem' }}>
-                {lang === 'ar' ? item.ar : item.fr}
-              </h3>
-              <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--fg-muted)' }}>
-                {lang === 'ar' ? item.dar : item.dfr}
-              </p>
-            </div>
-          ))}
+      {/* 7. Why us */}
+      <section style={{ background: 'var(--bg-surface)', padding: '4rem 0' }}>
+        <div className="max-w-7xl mx-auto px-4 lg:px-8">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
+            {[
+              { icon: '🚚', fr: 'Livraison partout au Maroc', ar: 'توصيل لجميع أنحاء المغرب', dfr: 'Délai 24–72h', dar: 'خلال 24–72 ساعة', img: '/images/hero-armani.jpg' },
+              { icon: '💵', fr: 'Paiement à la livraison', ar: 'الدفع عند الاستلام', dfr: 'Payez en cash', dar: 'ادفع نقداً', img: '/images/hero-burberry.jpg' },
+              { icon: '🌹', fr: 'Sélection haut de gamme', ar: 'اختيار من أرقى العطور', dfr: 'Fragrances authentiques', dar: 'عطور أصيلة', img: '/images/hero-jbg.jpg' },
+            ].map((item, i) => (
+              <div key={i} className="glass-card" style={{ padding: '2rem', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+                {/* Mini photo bg */}
+                <div style={{ position: 'absolute', inset: 0, opacity: 0.05 }}>
+                  <Image src={item.img} alt="" fill className="object-cover" />
+                </div>
+                <span style={{ fontSize: 32, display: 'block', marginBottom: '1rem' }}>{item.icon}</span>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--gold-mid)', marginBottom: '0.5rem' }}>
+                  {lang === 'ar' ? item.ar : item.fr}
+                </h3>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.78rem', color: 'var(--fg-muted)' }}>
+                  {lang === 'ar' ? item.dar : item.dfr}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
+
     </div>
   );
 }
