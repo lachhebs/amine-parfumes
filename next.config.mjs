@@ -9,9 +9,21 @@ const nextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
+    // Serve WebP/AVIF to browsers that support it — smaller files = faster load
+    formats: ['image/avif', 'image/webp'],
   },
-  // Next.js 15: opt into legacy searchParams behavior if needed
-  experimental: {},
+
+  // Enable HTTP keep-alive for Supabase fetch connections
+  // This avoids re-establishing TCP connections on every request
+  experimental: {
+    serverComponentsExternalPackages: [],
+  },
+
+  // Compress responses
+  compress: true,
+
+  // Aggressive static page generation
+  output: 'standalone',
 };
 
 export default nextConfig;

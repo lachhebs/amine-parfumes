@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { useLang } from '@/contexts/LangContext';
 import ProductCard from '@/components/store/ProductCard';
@@ -10,34 +10,88 @@ import type { Product, Category } from '@/types';
 interface Props {
   products: Product[];
   categories: Category[];
-  filters: Record<string, string | undefined>;
 }
 
-export default function CatalogueClient({ products, categories, filters }: Props) {
+export default function CatalogueClient({ products, categories }: Props) {
   const { lang, t } = useLang();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
-  const [search, setSearch] = useState(filters.search || '');
+  const [search, setSearch] = useState('');
 
-  const applyFilter = (key: string, value: string | undefined) => {
-    const params = new URLSearchParams();
-    if (filters.category && key !== 'category') params.set('category', filters.category);
-    if (filters.gender && key !== 'gender') params.set('gender', filters.gender);
-    if (filters.search && key !== 'search') params.set('search', filters.search);
-    if (value) params.set(key, value);
-    router.push(`/catalogue?${params.toString()}`);
+  // Read filters from URL (for shareable links / direct navigation)
+  const activeCategory = searchParams.get('category') || '';
+  const activeGender = searchParams.get('gender') || '';
+  const urlSearch = searchParams.get('search') || '';
+
+  // Sync URL search param → input state on mount
+  useEffect(() => {
+    setSearch(urlSearch);
+  }, [urlSearch]);
+
+  // Update URL params without triggering a server round-trip
+  const setFilter = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    // Use replace so back button works cleanly
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const clearFilters = () => {
+    router.replace(pathname, { scroll: false });
+    setSearch('');
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    applyFilter('search', search || undefined);
+    setFilter('search', search);
   };
+
+  // All filtering happens here in JS — instant, zero network
+  const filtered = useMemo(() => {
+    let list = products;
+
+    if (activeCategory) {
+      list = list.filter((p) => {
+        const cat = p.category as { slug?: string } | null;
+        return cat?.slug === activeCategory;
+      });
+    }
+
+    if (activeGender) {
+      list = list.filter((p) => p.gender === activeGender);
+    }
+
+    const term = urlSearch.toLowerCase().trim();
+    if (term) {
+      list = list.filter(
+        (p) =>
+          p.name_fr?.toLowerCase().includes(term) ||
+          p.name_ar?.toLowerCase().includes(term) ||
+          p.brand?.toLowerCase().includes(term)
+      );
+    }
+
+    // featured filter
+    if (searchParams.get('featured') === 'true') {
+      list = list.filter((p) => p.is_featured);
+    }
+
+    return list;
+  }, [products, activeCategory, activeGender, urlSearch, searchParams]);
 
   const genders = [
     { value: 'homme', label_fr: 'Homme', label_ar: 'رجالي' },
     { value: 'femme', label_fr: 'Femme', label_ar: 'نسائي' },
     { value: 'mixte', label_fr: 'Mixte', label_ar: 'مختلط' },
   ];
+
+  const hasFilters = activeCategory || activeGender || urlSearch;
 
   return (
     <div className="min-h-screen pt-24">
@@ -51,7 +105,7 @@ export default function CatalogueClient({ products, categories, filters }: Props
             {t('nav_catalogue')}
           </h1>
           <p className="font-body text-sm text-cream/40 mt-2">
-            {products.length} {lang === 'ar' ? 'منتج' : 'produits'}
+            {filtered.length} {lang === 'ar' ? 'منتج' : 'produits'}
           </p>
         </div>
 
@@ -67,7 +121,7 @@ export default function CatalogueClient({ products, categories, filters }: Props
               <h3 className="font-body text-xs tracking-[0.2em] uppercase text-gold-600 mb-4">
                 {lang === 'ar' ? 'بحث' : 'Recherche'}
               </h3>
-              <form onSubmit={handleSearch}>
+              <form onSubmit={handleSearchSubmit}>
                 <input
                   type="text"
                   value={search}
@@ -86,9 +140,9 @@ export default function CatalogueClient({ products, categories, filters }: Props
               <ul className="space-y-2">
                 <li>
                   <button
-                    onClick={() => applyFilter('category', undefined)}
+                    onClick={() => setFilter('category', '')}
                     className={`font-body text-sm w-full text-left transition-colors ${
-                      !filters.category ? 'text-gold-400' : 'text-cream/50 hover:text-cream/80'
+                      !activeCategory ? 'text-gold-400' : 'text-cream/50 hover:text-cream/80'
                     }`}
                   >
                     {lang === 'ar' ? 'الكل' : 'Tous'}
@@ -97,9 +151,9 @@ export default function CatalogueClient({ products, categories, filters }: Props
                 {categories.map((cat) => (
                   <li key={cat.id}>
                     <button
-                      onClick={() => applyFilter('category', cat.slug)}
+                      onClick={() => setFilter('category', cat.slug)}
                       className={`font-body text-sm w-full text-left transition-colors ${
-                        filters.category === cat.slug
+                        activeCategory === cat.slug
                           ? 'text-gold-400'
                           : 'text-cream/50 hover:text-cream/80'
                       }`}
@@ -119,9 +173,9 @@ export default function CatalogueClient({ products, categories, filters }: Props
               <ul className="space-y-2">
                 <li>
                   <button
-                    onClick={() => applyFilter('gender', undefined)}
+                    onClick={() => setFilter('gender', '')}
                     className={`font-body text-sm w-full text-left transition-colors ${
-                      !filters.gender ? 'text-gold-400' : 'text-cream/50 hover:text-cream/80'
+                      !activeGender ? 'text-gold-400' : 'text-cream/50 hover:text-cream/80'
                     }`}
                   >
                     {lang === 'ar' ? 'الكل' : 'Tous'}
@@ -130,9 +184,9 @@ export default function CatalogueClient({ products, categories, filters }: Props
                 {genders.map((g) => (
                   <li key={g.value}>
                     <button
-                      onClick={() => applyFilter('gender', g.value)}
+                      onClick={() => setFilter('gender', g.value)}
                       className={`font-body text-sm w-full text-left transition-colors ${
-                        filters.gender === g.value
+                        activeGender === g.value
                           ? 'text-gold-400'
                           : 'text-cream/50 hover:text-cream/80'
                       }`}
@@ -145,9 +199,9 @@ export default function CatalogueClient({ products, categories, filters }: Props
             </div>
 
             {/* Clear */}
-            {(filters.category || filters.gender || filters.search) && (
+            {hasFilters && (
               <button
-                onClick={() => router.push('/catalogue')}
+                onClick={clearFilters}
                 className="flex items-center gap-2 font-body text-xs text-cream/40 
                            hover:text-gold-400 transition-colors"
               >
@@ -170,7 +224,7 @@ export default function CatalogueClient({ products, categories, filters }: Props
               </button>
             </div>
 
-            {products.length === 0 ? (
+            {filtered.length === 0 ? (
               <div className="text-center py-20">
                 <span className="text-5xl mb-4 block opacity-30">🌸</span>
                 <p className="font-body text-cream/40">
@@ -179,7 +233,7 @@ export default function CatalogueClient({ products, categories, filters }: Props
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-                {products.map((p) => (
+                {filtered.map((p) => (
                   <ProductCard key={p.id} product={p} />
                 ))}
               </div>
