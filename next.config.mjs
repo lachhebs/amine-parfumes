@@ -9,21 +9,15 @@ const nextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
-    // Serve WebP/AVIF to browsers that support it — smaller files = faster load
+    // Serve WebP/AVIF — smaller files = faster load
     formats: ['image/avif', 'image/webp'],
   },
 
-  // Enable HTTP keep-alive for Supabase fetch connections
-  // This avoids re-establishing TCP connections on every request
-  experimental: {
-    serverComponentsExternalPackages: [],
-  },
-
-  // Compress responses
+  // Compress all responses
   compress: true,
 
-  // Aggressive static page generation
-  output: 'standalone',
+  // DO NOT use output: 'standalone' on Vercel — it breaks deployment
+  // Vercel handles its own output format automatically
 };
 
 export default nextConfig;
