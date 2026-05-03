@@ -19,28 +19,28 @@ const navItems = [
 ];
 
 /*
-  SIDEBAR PALETTE — always uses the store's signature dark navy + gold.
-  This stays dark regardless of the light/dark theme toggle so it matches
-  the brand identity and text is always readable.
+  COGNAC LEATHER SIDEBAR PALETTE
+  Warm dark amber/brown — like a luxury perfume bottle in dark amber glass.
+  Always dark so text is always visible regardless of store light/dark mode.
 */
 const SB = {
-  bg:          'linear-gradient(165deg, #0a0e1a 0%, #0f1628 40%, #0d1530 70%, #080c18 100%)',
-  border:      'rgba(201,162,39,0.18)',
-  glow1:       'rgba(201,162,39,0.07)',   // gold glow top-right
-  glow2:       'rgba(100,60,180,0.06)',   // purple glow bottom-left
-  logoName:    '#e6c97a',                 // gold-light
-  logoSub:     'rgba(201,162,39,0.45)',
-  sectionLabel:'rgba(201,162,39,0.35)',
-  itemDefault: 'rgba(253,248,238,0.5)',   // always light text
-  itemHover:   'rgba(253,248,238,0.88)',
-  itemActive:  '#e6c97a',
-  itemActiveBg:'rgba(201,162,39,0.13)',
-  itemBorder:  '#c9a227',
-  footerText:  'rgba(253,248,238,0.38)',  // footer links — always visible
-  footerHover: 'rgba(253,248,238,0.75)',
-  logoutHover: '#f87171',
-  divider:     'rgba(201,162,39,0.1)',
-  badge:       { bg: 'rgba(201,162,39,0.18)', color: '#c9a227', border: 'rgba(201,162,39,0.35)' },
+  bg:           'linear-gradient(175deg, #120c06 0%, #1a1008 25%, #150d07 55%, #0a0704 100%)',
+  border:       'rgba(201,140,39,0.22)',
+  glow1:        'rgba(201,140,39,0.12)',
+  glow2:        'rgba(180,110,30,0.07)',
+  logoName:     '#e6c97a',
+  logoSub:      'rgba(201,162,39,0.50)',
+  sectionLabel: 'rgba(230,185,100,0.38)',
+  itemDefault:  'rgba(240,220,180,0.50)',  // warm ivory text — always visible on brown
+  itemHover:    'rgba(240,220,180,0.92)',
+  itemActive:   '#e6c97a',
+  itemActiveBg: 'rgba(201,140,39,0.18)',
+  itemBorder:   '#c9a227',
+  footerText:   'rgba(240,220,180,0.42)', // warm ivory — always visible on brown bg
+  footerHover:  'rgba(240,220,180,0.85)',
+  logoutHover:  '#f87171',
+  divider:      'rgba(201,140,39,0.12)',
+  badge:        { bg: 'rgba(201,140,39,0.20)', color: '#ddb84e', border: 'rgba(201,140,39,0.35)' },
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

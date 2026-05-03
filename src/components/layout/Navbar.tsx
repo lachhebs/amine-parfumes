@@ -31,14 +31,18 @@ export default function Navbar() {
     { href: '/#contact', label: t('nav_contact') },
   ];
 
-  const navBg = scrolled
+  const navBg = scrolled ? (isLight ? 'shadow-sm border-b' : 'border-b') : '';
+  const navBgStyle = scrolled
     ? isLight
-      ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-[var(--border-gold)]'
-      : 'bg-[#0a0e1a]/95 backdrop-blur-md border-b border-[var(--border-gold)]'
-    : 'bg-transparent';
+      ? { background: '#fdf8f0', borderColor: 'rgba(133,97,24,0.2)' }
+      : { background: '#0a0e1a', borderColor: 'rgba(201,162,39,0.2)' }
+    : { background: 'transparent' };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${navBg} py-3`}>
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navBg} py-3`}
+      style={navBgStyle}
+    >
       <nav className="max-w-7xl mx-auto px-4 lg:px-8 flex items-center gap-6">
         {/* Logo */}
         <Link href="/" className="flex-shrink-0 flex items-center gap-3">
