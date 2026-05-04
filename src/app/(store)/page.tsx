@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import HomeClient from './HomeClient';
+import type { Product, Category } from '@/types';
 
 export const revalidate = 300;
 
@@ -28,9 +29,9 @@ export default async function HomePage() {
 
   return (
     <HomeClient
-      featured={featured || []}
-      newProducts={newProducts || []}
-      categories={categories || []}
+      featured={(featured || []) as Product[]}
+      newProducts={(newProducts || []) as Product[]}
+      categories={(categories || []) as Category[]}
     />
   );
 }
