@@ -4,7 +4,6 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "nodejs": "18.x",
   "headers": [
     {
       "source": "/images/(.*)",
