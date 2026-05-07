@@ -1,28 +1,28 @@
-import { Suspense } from 'react';
-import { getProducts, getCategories } from '@/lib/queries';
+import { supabase } from '@/lib/supabase';
 import CatalogueClient from './CatalogueClient';
-import type { Product, Category } from '@/types';
 
+// Cache for 5 minutes — products don't change that often
 export const revalidate = 300;
 
 export default async function CataloguePage() {
-  const [products, categories] = await Promise.all([
-    getProducts(),
-    getCategories(),
+  // Fetch EVERYTHING once — filtering is done client-side (instant)
+  const [{ data: products }, { data: categories }] = await Promise.all([
+    supabase
+      .from('products')
+      .select('*, category:categories(*)')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order'),
   ]);
 
   return (
-    <Suspense fallback={
-      <div className="min-h-screen pt-24 flex items-center justify-center">
-        <p style={{ fontFamily: 'var(--font-body)', color: 'var(--fg-muted)', fontSize: '0.8rem', letterSpacing: '0.2em' }}>
-          Chargement...
-        </p>
-      </div>
-    }>
-      <CatalogueClient
-        products={products as Product[]}
-        categories={categories as Category[]}
-      />
-    </Suspense>
+    <CatalogueClient
+      products={products || []}
+      categories={categories || []}
+    />
   );
 }

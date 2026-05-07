@@ -24,21 +24,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" dir="ltr">
       <head>
-        {/* Step 1: preconnect to Google Fonts servers — establishes TCP early */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-
-        {/*
-          Step 2: load fonts with rel="stylesheet" in <head> (NOT @import in CSS).
-          @import in CSS is render-blocking AND delays font discovery.
-          This way the browser finds fonts in the first HTML response.
-          display=swap ensures text is visible immediately with fallback font.
-        */}
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&family=Amiri:wght@400;700&display=swap"
-          rel="stylesheet"
-        />
       </head>
       <body>
         <ThemeProvider>

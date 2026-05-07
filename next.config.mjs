@@ -9,15 +9,9 @@ const nextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
-    // Serve WebP/AVIF — smaller files = faster load
-    formats: ['image/avif', 'image/webp'],
   },
-
-  // Compress all responses
-  compress: true,
-
-  // DO NOT use output: 'standalone' on Vercel — it breaks deployment
-  // Vercel handles its own output format automatically
+  // Next.js 15: opt into legacy searchParams behavior if needed
+  experimental: {},
 };
 
 export default nextConfig;

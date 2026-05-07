@@ -1,23 +1,36 @@
-import { getProducts, getCategories } from '@/lib/queries';
+import { supabase } from '@/lib/supabase';
 import HomeClient from './HomeClient';
-import type { Product, Category } from '@/types';
 
-export const revalidate = 300;
+export const revalidate = 60;
 
 export default async function HomePage() {
-  const [products, categories] = await Promise.all([
-    getProducts(),
-    getCategories(),
+  const [{ data: featured }, { data: newProducts }, { data: categories }] = await Promise.all([
+    supabase
+      .from('products')
+      .select('*')
+      .eq('is_featured', true)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(8),
+    supabase
+      .from('products')
+      .select('*')
+      .eq('is_new', true)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(4),
+    supabase
+      .from('categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order'),
   ]);
-
-  const featured = (products as Product[]).filter((p) => p.is_featured).slice(0, 8);
-  const newProducts = (products as Product[]).filter((p) => p.is_new).slice(0, 4);
 
   return (
     <HomeClient
-      featured={featured}
-      newProducts={newProducts}
-      categories={categories as Category[]}
+      featured={featured || []}
+      newProducts={newProducts || []}
+      categories={categories || []}
     />
   );
 }
